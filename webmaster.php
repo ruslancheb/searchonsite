@@ -1,8 +1,7 @@
 <?php
-header('Content-Type: text/html; charset=utf-8');
 error_reporting(E_ERROR | E_PARSE);
+header('Content-Type: text/html; charset=utf-8');
 set_time_limit(0);//
-
     function rudate($format, $timestamp = 0, $nominative_month = false)
     {
     if(!$timestamp) $timestamp = time();
@@ -42,12 +41,21 @@ return $v.' b';
 }
 //Создание соединения с БД
 $filename='config_search_kuz.php';//Название файла с конфигурацией
-if(file_exists($filename)){include $filename;
+if(file_exists($filename)){
+include $filename;
 if(strlen($_POST['password'])>0 or strlen($_COOKIE['password_search_kuz'])>0)
 {
 if(strlen($password)>0 and ($_POST['password']==$password or $_COOKIE['password_search_kuz']==$password))
 {
-setcookie("password_search_kuz",$password,time()+30000000);
+$var=setcookie("password_search_kuz",$password,time()+30000000,'/');
+if($var===true)
+{
+
+}
+else
+{
+echo 'Мы не смогли установить  cookies в вашем бруаузере ,или наличие пробелов или переводов строк в конфигурационном файле скрипта';
+};
 }
 else
 {
@@ -72,7 +80,6 @@ echo '
 ';
 exit;
 }
-
 $link = mysql_connect($mysql_host,$mysql_login,$mysql_password);//Подключение к базе данных
 $res_link=mysql_select_db($mysql_db,$link);
 mysql_query("set names utf8");
@@ -82,12 +89,13 @@ else
 if($_POST['parol'])
 {
 $file=
-'
-<?php
+'<?php
 define("Ogon","Ogon");
-$password="'.trim($_POST['parol']).'";
-?>
-';
+$password="'.trim($_POST['password']).'";
+?>';
+$fp = fopen($filename, 'w');
+fwrite($fp,$file);
+fclose($fp);
 }
 else
 {
@@ -102,11 +110,7 @@ $arr = array('a','b','c','d','e','f',
 'M','N','O','P','R','S',
 'T','U','V','X','Y','Z',
 '1','2','3','4','5','6',
-'7','8','9','0','.',',',
-'(',')','[',']','!','?',
-'&','^','%','@','*','$',
-'<','>','/','|','+','-',
-'{','}','`','~');
+'7','8','9','0');
 // Генерируем пароль
 $pass = "";
 for($i = 0; $i < $number; $i++)
@@ -117,10 +121,11 @@ $pass .= $arr[$index];
 }
 return $pass;
 }
+
 ?>
 <meta charset="utf-8">
 <table>
-<tr><td>Сркипт быстрого поиска и редактирования не сайте</td></tr>
+<tr><td>Скрипт быстрого поиска и редактирования не сайте</td></tr>
 <tr>
 <td>Пароль на этот скрипт:</td>
 <td>
@@ -353,10 +358,53 @@ $obj=$_GET['fopen'];
 $handle = fopen($obj,"r");
 $text=fread($handle,filesize($obj));
 fclose($handle);
+$array_ext=explode(".",basename($obj));
+if(count($array_ext)>1)
+{
+$ext_open=end($array_ext);
+}
+if($ext_open=='html' or $ext_open=='htm')
+{
+$mode='text/html';
+}
+elseif($ext_open=='php' or $ext_open=='php4' or $ext_open=='php5' or $ext_open=='php6')
+{
+$mode='text/x-php';
+}
 echo '
+<!doctype html>
+<title>Редактор файлов</title>
+<meta charset="utf-8"/>
+<!--Подсветка синтаксиса -->
+<script src="http://juliabot.com/hosted_library/codemirror/lib/codemirror.js"></script>
+<link rel="stylesheet" href="http://juliabot.com/hosted_library/codemirror/lib/codemirror.css">
+<script src="http://juliabot.com/hosted_library/codemirror/mode/php/php.js"></script>
+<link rel=stylesheet href="http://juliabot.com/hosted_library/codemirror/doc/docs.css">
+<script src="http://juliabot.com/hosted_library/codemirror/lib/codemirror.js"></script>
+<script src="http://juliabot.com/hosted_library/codemirror/mode/xml/xml.js"></script>
+<script src="http://juliabot.com/hosted_library/codemirror/mode/javascript/javascript.js"></script>
+<script src="http://juliabot.com/hosted_library/codemirror/mode/css/css.js"></script>
+<script src="http://juliabot.com/hosted_library/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+<script src="http://juliabot.com/hosted_library/codemirror/addon/edit/matchbrackets.js"></script>
+
+
+<style>
+.CodeMirror { height: 95%; border: 1px solid #ddd; }
+</style>
+
 <form action="" method="POST">
 <input type="hidden" name="path" value="'.$_GET['fopen'].'">
-<textarea name="file_text" style="width:100%;height:95%;">'.htmlspecialchars($text).'</textarea>
+<textarea id="file_text" name="file_text" style="width:100%;height:95%;">'.htmlspecialchars($text).'</textarea>
+<script>
+  window.onload = function(){
+var myTextarea=document.getElementById("file_text");
+var editor = CodeMirror.fromTextArea(myTextarea, {
+
+    mode: "'.$mode.'",
+  });
+  
+   }
+</script>
 <br>
 <input type="submit" value="Save changes">
 </form>
@@ -699,14 +747,12 @@ else
 
 if($_POST['install']==1 and !file_exists($filename))
 {
-$text='
-<?php
+$text='<?php
 $mysql_login="'.$_POST['mysql_login'].'";
 $mysql_password="'.$_POST['mysql_password'].'";
 $mysql_host="'.$_POST['mysql_host'].'";
 $mysql_db="'.$_POST['mysql_db'].'";
-?>
-';
+?>';
 // Открыть файл
 $f = fopen($filename, "a+");
 // Записать строку
@@ -1098,7 +1144,7 @@ $vtext=$ntext.$search_string.$ktext;
 else
 {
 $ios=true;
-$vtext='Количество вхождений данного запроса в этом файле превышает 1.Лучше отрежактируйте файл по ссылке';
+$vtext='Количество вхождений данного запроса в этом файле превышает 1.Лучше отредактируйте файл по ссылке поля "Имя файла"';
 }
 }
 elseif(strpos($text,$search_string_win)!==false)
@@ -1248,6 +1294,18 @@ $ext[]=$v;
 if(count($ext)>0)
 {
 $ext2=array_flip($ext);
+//Дополнение синонимичных расширений
+/*
+if(isset($ext2['jpg']))
+{
+$ext2['jpeg']=1;
+};
+if(isset($ext2['jpeg']))
+{
+$ext2['jpg']=1;
+};
+*/
+
 }
 else
 {
