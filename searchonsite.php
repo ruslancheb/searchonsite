@@ -1,4 +1,5 @@
 <?php
+header('Content-Type: text/html; charset=utf-8');
 error_reporting(E_ERROR | E_PARSE);
 set_time_limit(0);//
 
