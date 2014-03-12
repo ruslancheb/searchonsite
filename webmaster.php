@@ -80,9 +80,20 @@ echo '
 ';
 exit;
 }
+
+if(file_exists($_SERVER['DOCUMENT_ROOT'].'/bitrix/php_interface/dbconn.php'))
+{
+	include $_SERVER['DOCUMENT_ROOT'].'/bitrix/php_interface/dbconn.php';
+	$mysql_host=$DBHost;
+	$mysql_login=$DBLogin;
+	$mysql_password=$DBPassword;
+	$mysql_db=$DBName;
+}
+
 $link = mysql_connect($mysql_host,$mysql_login,$mysql_password);//Подключение к базе данных
 $res_link=mysql_select_db($mysql_db,$link);
 mysql_query("set names utf8");
+
 }
 else
 {
@@ -777,8 +788,24 @@ if($res_link===false or $res_link===NULL)//Проверяем подключил
 <?php
 }
 ?>
+
 </div>
+<?php
+$res = mysql_query("SHOW DATABASES");
+
+while ($row = mysql_fetch_assoc($res)) {
+    $databases[]=$row['Database'];
+}
+//print_r($databases);
+echo '<br>Базы данных в которых будет проходить поиск:';
+foreach($databases as $k=>$v)
+{
+$checked='checked';
+echo '<br><input '.$checked.' type="checkbox" name="databases[]" value="'.htmlspecialchars($v).'">&nbsp;'.htmlspecialchars($v).'';
+}
+?>
 </td>
+
 </tr>
 <tr>
 <?php if($_POST['evristika']=='y'){ $checked='checked';}else{ $checked='';}?>
@@ -1490,17 +1517,7 @@ if($_POST['mysql']=='y' or $_POST['only_mysql']=='y')
 {
 $result=array();
 
-echo '
-<h3><font color="#3366FF">Поиск внутри базы данных</font></h3>
-<table style="widht:100%;min-width:1000px;">
-<tr>
-<td><font color="blue">Имя таблицы</font></td>
-<td><font color="blue">Имя поля</font></td>
-<td><font color="blue">Содержимое поля</font></td>
-<td><font color="blue">Кодировка поиска</font></td>
-<td><font color="blue">Сколько раз входит</font></td>
-</tr>
-';
+
 // Written by Mark Jackson @ MJDIGITAL
 // http://www.mjdigital.co.uk/blog
 // Ищем...
@@ -1509,51 +1526,87 @@ $search = $search_string; // Например: 'www.old-site.ru'
 // Меняем на... Используется при $queryType = 'replace'
 $replace = 'НА_ЧТО_ЗАМЕНЯЕМ'; // Например: 'www.new-site.ru'
 // Настройки базы данных
-$database = $mysql_db;
-// Варианты значения переменной $queryType 'search' (вывод результатов поиска) или 'replace' (поиск с заменой)
-$queryType = 'search';
-$table_sql = 'SHOW TABLES';
-$table_q = mysql_query($table_sql) or die("Cannot Query DB: ".mysql_error());
-$tables_r = mysql_fetch_assoc($table_q);
-$tables = array();
-do{
-$tables[] = $tables_r['Tables_in_'.strtolower($database)];
-}while($tables_r = mysql_fetch_assoc($table_q));
-$use_sql = array();
-$summary = '';
-foreach($tables as $table) {
-$field_sql = 'SHOW FIELDS FROM '.$table;
-$field_q = mysql_query($field_sql);
-$field_r = mysql_fetch_assoc($field_q);
-do {
-$field = $field_r['Field'];
-$type = $field_r['Type'];
-
-switch(true) {
-case stristr(strtolower($type),'char'): $typeOK = true; break;
-case stristr(strtolower($type),'text'): $typeOK = true; break;
-case stristr(strtolower($type),'blob'): $typeOK = true; break;
-case stristr(strtolower($field_r['Key']),'pri'): $typeOK = false; break;
-default: $typeOK = false; break;
-}
-if($typeOK) {
-$handle = $table.'_'.$field;
-$sql[$handle]['sql'] = 'SELECT * FROM '.$table.' WHERE '.$field.' LIKE "%'.$search.'%";';
-//echo $sql[$handle]['sql'].'<br>';
-$error = false;
-$query = @mysql_query($sql[$handle]['sql']) or $error = mysql_error();
-while($resu=mysql_fetch_array($query))
+$databases=array();
+foreach($_POST['databases'] as $k=>$v)
 {
-$nom=substr_count($resu[$field],$search);
-$result[]=array('file'=>$table,'file2'=>$field,'text'=>$resu[$field],'kod'=>'utf-8','kol_vx'=>$nom,'ser_ar'=>$resu);
+$databases[]=$v;
+$req_dir[]=$path;
 }
-//$row_count = @mysql_affected_rows() or $row_count = 0;
+if(count($databases)==0)
+{
+$databases[]=$mysql_db;
 }
-}while($field_r = mysql_fetch_assoc($field_q));
+
+foreach($databases as $k=>$v)
+{
+	$database = $v;
+
+	mysql_select_db($database);
+	// Варианты значения переменной $queryType 'search' (вывод результатов поиска) или 'replace' (поиск с заменой)
+	$queryType = 'search';
+	$table_sql = 'SHOW TABLES FROM '.$database ;
+	$table_q = mysql_query($table_sql) or die("Cannot Query DB: ".mysql_error());
+	$tables_r = mysql_fetch_assoc($table_q);
+	$tables = array();
+		do{
+		//print_r($tables_r);
+		//var_dump('Tables_in_'.strtolower($database));
+		//var_dump($tables_r);
+		//var_dump($tables_r['Tables_in_'.strtolower($database)]);
+		$tables[] = $tables_r['Tables_in_'.strtolower($database)];
+		
+		}
+		while($tables_r = mysql_fetch_assoc($table_q));
+	
+	$use_sql = array();
+	$summary = '';
+		foreach($tables as $table) {
+		$field_sql = 'SHOW FIELDS FROM '.$table;
+		$field_q = mysql_query($field_sql);
+		$field_r = mysql_fetch_assoc($field_q);
+			do {
+			$field = $field_r['Field'];
+			$type = $field_r['Type'];
+
+				switch(true) {
+				case stristr(strtolower($type),'char'): $typeOK = true; break;
+				case stristr(strtolower($type),'text'): $typeOK = true; break;
+				case stristr(strtolower($type),'blob'): $typeOK = true; break;
+				case stristr(strtolower($field_r['Key']),'pri'): $typeOK = false; break;
+				default: $typeOK = false; break;
+				}
+			if($typeOK) {
+			$handle = $table.'_'.$field;
+			$sql[$handle]['sql'] = 'SELECT * FROM '.$table.' WHERE '.$field.' LIKE "%'.$search.'%";';
+			//echo $sql[$handle]['sql'].'<br>';
+			$error = false;
+			$query = @mysql_query($sql[$handle]['sql']) or $error = mysql_error();
+			while($resu=mysql_fetch_array($query))
+			{
+			$nom=substr_count($resu[$field],$search);
+			$result[]=array('database'=>$database,'file'=>$table,'file2'=>$field,'text'=>$resu[$field],'kod'=>'utf-8','kol_vx'=>$nom,'ser_ar'=>$resu);
+			}
+			//$row_count = @mysql_affected_rows() or $row_count = 0;
+			}
+			}while($field_r = mysql_fetch_assoc($field_q));
+		}
 }
+
+echo '
+<h3><font color="#3366FF">Поиск внутри базы данных</font></h3>
+<table style="widht:100%;min-width:1000px;">
+<tr>
+<td><font color="blue">База данных</font></td>
+<td><font color="blue">Имя таблицы</font></td>
+<td><font color="blue">Имя поля</font></td>
+<td><font color="blue">Содержимое поля</font></td>
+<td><font color="blue">Кодировка поиска</font></td>
+<td><font color="blue">Сколько раз входит</font></td>
+</tr>
+';
 foreach($result as $k=>$v)
 {
-echo '<tr><td style="width:12%;">'.$v['file'].'</td><td style="width:8%;">'.$v['file2'].'</td><td style="width:60%;height:120px;">
+echo '<tr><td style="width:12%;">'.$v['database'].'</td><td style="width:12%;">'.$v['file'].'</td><td style="width:8%;">'.$v['file2'].'</td><td style="width:60%;height:120px;">
 <textarea id="mysqlrow_'.$k.'" style="width:100%;height:100px;">'.htmlspecialchars($v['text']).'</textarea><br>';
 if(strlen($_POST['search_string_zam'])>0)
 {
