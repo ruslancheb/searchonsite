@@ -135,6 +135,8 @@ return $pass;
 
 ?>
 <meta charset="utf-8">
+
+
 <table>
 <tr><td>Скрипт быстрого поиска и редактирования не сайте</td></tr>
 <tr>
@@ -382,9 +384,25 @@ elseif($ext_open=='php' or $ext_open=='php4' or $ext_open=='php5' or $ext_open==
 {
 $mode='text/x-php';
 }
+elseif($ext_open=='css')
+{
+$mode='css';
+}
+elseif($ext_open=='xml')
+{
+$mode='xml';
+}
+else
+{
+$mode=$ext_open;
+}
+
 echo '
 <!doctype html>
+
 <title>Редактор файлов</title>
+<link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQEAYAAABPYyMiAAAABmJLR0T///////8JWPfcAAAACXBIWXMAAABIAAAASABGyWs+AAAAF0lEQVRIx2NgGAWjYBSMglEwCkbBSAcACBAAAeaR9cIAAAAASUVORK5CYII=" rel="icon" type="image/x-icon" />
+
 <meta charset="utf-8"/>
 <!--Подсветка синтаксиса -->
 <script src="http://juliabot.com/hosted_library/codemirror/lib/codemirror.js"></script>
@@ -402,22 +420,43 @@ echo '
 <style>
 .CodeMirror { height: 95%; border: 1px solid #ddd; }
 </style>
+<b>Строка поиска</b>:'.htmlspecialchars($_GET['search_string']).' &nbsp;&nbsp;&nbsp;&nbsp; Файл открыт в кодировке '.htmlspecialchars($_GET['kod']).'
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<input type="text" size="30" name="" value="'.addslashes(htmlspecialchars($_GET['search_string'])).'">
+<input type="submit" value="Найти далее"><input type="submit" value="Найти выше">&nbsp;&nbsp;
+<small>Перейти на <a  target="_blank" href="http://'.$_SERVER['HTTP_HOST'].'">'.$_SERVER['HTTP_HOST'].'</a>&nbsp;
+<style>
+a
+{
+    color: #A21313;
+    text-decoration: none;
+}
+td,a {
+ word-wrap: break-word !important;
+}
+</style>
+&nbsp;&nbsp;&nbsp;&nbsp;
 
+</small>
+<br>
+<small>
+<b>Файл:</b>'.htmlspecialchars($_GET['fopen']).' <br>Перекодировать в <input type="radio" name="1"> utf-8 <input type="radio" name="1"> windows-1251 &nbsp;&nbsp;<input type="submit" value="Сделать backup">
+</small>
+<br>
 <form action="" method="POST">
 <input type="hidden" name="path" value="'.$_GET['fopen'].'">
-<textarea id="file_text" name="file_text" style="width:100%;height:95%;">'.htmlspecialchars($text).'</textarea>
+<textarea id="file_text" name="file_text" style="width:100%;height:80%;">'.htmlspecialchars($text).'</textarea>
 <script>
   window.onload = function(){
 var myTextarea=document.getElementById("file_text");
 var editor = CodeMirror.fromTextArea(myTextarea, {
-
     mode: "'.$mode.'",
   });
   
    }
 </script>
 <br>
-<input type="submit" value="Save changes">
+<input type="submit" value="Сохранить изменения">
 </form>
 ';
 exit;
@@ -426,6 +465,8 @@ exit;
 ?>
 
 <meta charset="utf-8">
+<link href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAwElEQVQ4jc3SMUoDURSF4W+GgKiQQgjaWJglKJIuS7DJDuyskl6rKawsLALaWDhhAmlszFayHMHiTVK992bAxlPe/5zD5XJJq8ywpI5RYY1PNFjhtk94jO+I+QSvWOTCJb5wnvG8YJKCM9x3bHiETa79oqOAcJdBDNQ9wvCMyxiocNWjoEERA1M8doRH+MgZ3nCdYAPhN6Lr7zUUbjHHaTsrcIMtdnjo2BLc4V34wBpPOGvDP31LUvpfJcu/FBz0C4cNG5riwh3/AAAAAElFTkSuQmCC" rel="icon" type="image/x-icon" />
+
 <link rel="stylesheet" href="//code.jquery.com/ui/1.10.4/themes/smoothness/jquery-ui.css">
 <script src="//code.jquery.com/jquery-1.9.1.js"></script>
 <script src="//code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
@@ -525,21 +566,360 @@ alert( "Ответ: " + msg );
 });
 }
 
+// Simple Set Clipboard System
+// Author: Joseph Huckaby
+
+var ZeroClipboard = {
+	
+	version: "1.0.7",
+	clients: {}, // registered upload clients on page, indexed by id
+	moviePath: 'ZeroClipboard.swf', // URL to movie
+	nextId: 1, // ID of next movie
+	
+	$: function(thingy) {
+		// simple DOM lookup utility function
+		if (typeof(thingy) == 'string') thingy = document.getElementById(thingy);
+		if (!thingy.addClass) {
+			// extend element with a few useful methods
+			thingy.hide = function() { this.style.display = 'none'; };
+			thingy.show = function() { this.style.display = ''; };
+			thingy.addClass = function(name) { this.removeClass(name); this.className += ' ' + name; };
+			thingy.removeClass = function(name) {
+				var classes = this.className.split(/\s+/);
+				var idx = -1;
+				for (var k = 0; k < classes.length; k++) {
+					if (classes[k] == name) { idx = k; k = classes.length; }
+				}
+				if (idx > -1) {
+					classes.splice( idx, 1 );
+					this.className = classes.join(' ');
+				}
+				return this;
+			};
+			thingy.hasClass = function(name) {
+				return !!this.className.match( new RegExp("\\s*" + name + "\\s*") );
+			};
+		}
+		return thingy;
+	},
+	
+	setMoviePath: function(path) {
+		// set path to ZeroClipboard.swf
+		this.moviePath = path;
+	},
+	
+	dispatch: function(id, eventName, args) {
+		// receive event from flash movie, send to client		
+		var client = this.clients[id];
+		if (client) {
+			client.receiveEvent(eventName, args);
+		}
+	},
+	
+	register: function(id, client) {
+		// register new client to receive events
+		this.clients[id] = client;
+	},
+	
+	getDOMObjectPosition: function(obj, stopObj) {
+		// get absolute coordinates for dom element
+		var info = {
+			left: 0, 
+			top: 0, 
+			width: obj.width ? obj.width : obj.offsetWidth, 
+			height: obj.height ? obj.height : obj.offsetHeight
+		};
+
+		while (obj && (obj != stopObj)) {
+			info.left += obj.offsetLeft;
+			info.top += obj.offsetTop;
+			obj = obj.offsetParent;
+		}
+
+		return info;
+	},
+	
+	Client: function(elem) {
+		// constructor for new simple upload client
+		this.handlers = {};
+		
+		// unique ID
+		this.id = ZeroClipboard.nextId++;
+		this.movieId = 'ZeroClipboardMovie_' + this.id;
+		
+		// register client with singleton to receive flash events
+		ZeroClipboard.register(this.id, this);
+		
+		// create movie
+		if (elem) this.glue(elem);
+	}
+};
+
+
+ZeroClipboard.Client.prototype = {
+	
+	id: 0, // unique ID for us
+	ready: false, // whether movie is ready to receive events or not
+	movie: null, // reference to movie object
+	clipText: '', // text to copy to clipboard
+	handCursorEnabled: true, // whether to show hand cursor, or default pointer cursor
+	cssEffects: true, // enable CSS mouse effects on dom container
+	handlers: null, // user event handlers
+	
+	glue: function(elem, appendElem, stylesToAdd) {
+		// glue to DOM element
+		// elem can be ID or actual DOM element object
+		this.domElement = ZeroClipboard.$(elem);
+		
+		// float just above object, or zIndex 99 if dom element isn't set
+		var zIndex = 99;
+		if (this.domElement.style.zIndex) {
+			zIndex = parseInt(this.domElement.style.zIndex, 10) + 1;
+		}
+		
+		if (typeof(appendElem) == 'string') {
+			appendElem = ZeroClipboard.$(appendElem);
+		}
+		else if (typeof(appendElem) == 'undefined') {
+			appendElem = document.getElementsByTagName('body')[0];
+		}
+		
+		// find X/Y position of domElement
+		var box = ZeroClipboard.getDOMObjectPosition(this.domElement, appendElem);
+		
+		// create floating DIV above element
+		this.div = document.createElement('div');
+		var style = this.div.style;
+		style.position = 'absolute';
+		style.left = '' + box.left + 'px';
+		style.top = '' + box.top + 'px';
+		style.width = '' + box.width + 'px';
+		style.height = '' + box.height + 'px';
+		style.zIndex = zIndex;
+		
+		if (typeof(stylesToAdd) == 'object') {
+			for (addedStyle in stylesToAdd) {
+				style[addedStyle] = stylesToAdd[addedStyle];
+			}
+		}
+		
+		// style.backgroundColor = '#f00'; // debug
+		
+		appendElem.appendChild(this.div);
+		
+		this.div.innerHTML = this.getHTML( box.width, box.height );
+	},
+	
+	getHTML: function(width, height) {
+		// return HTML for movie
+		var html = '';
+		var flashvars = 'id=' + this.id + 
+			'&width=' + width + 
+			'&height=' + height;
+			
+		if (navigator.userAgent.match(/MSIE/)) {
+			// IE gets an OBJECT tag
+			var protocol = location.href.match(/^https/i) ? 'https://' : 'http://';
+			html += '<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="'+protocol+'download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=9,0,0,0" width="'+width+'" height="'+height+'" id="'+this.movieId+'" align="middle"><param name="allowScriptAccess" value="always" /><param name="allowFullScreen" value="false" /><param name="movie" value="'+ZeroClipboard.moviePath+'" /><param name="loop" value="false" /><param name="menu" value="false" /><param name="quality" value="best" /><param name="bgcolor" value="#ffffff" /><param name="flashvars" value="'+flashvars+'"/><param name="wmode" value="transparent"/></object>';
+		}
+		else {
+			// all other browsers get an EMBED tag
+			html += '<embed id="'+this.movieId+'" src="'+ZeroClipboard.moviePath+'" loop="false" menu="false" quality="best" bgcolor="#ffffff" width="'+width+'" height="'+height+'" name="'+this.movieId+'" align="middle" allowScriptAccess="always" allowFullScreen="false" type="application/x-shockwave-flash" pluginspage="http://www.macromedia.com/go/getflashplayer" flashvars="'+flashvars+'" wmode="transparent" />';
+		}
+		return html;
+	},
+	
+	hide: function() {
+		// temporarily hide floater offscreen
+		if (this.div) {
+			this.div.style.left = '-2000px';
+		}
+	},
+	
+	show: function() {
+		// show ourselves after a call to hide()
+		this.reposition();
+	},
+	
+	destroy: function() {
+		// destroy control and floater
+		if (this.domElement && this.div) {
+			this.hide();
+			this.div.innerHTML = '';
+			
+			var body = document.getElementsByTagName('body')[0];
+			try { body.removeChild( this.div ); } catch(e) {;}
+			
+			this.domElement = null;
+			this.div = null;
+		}
+	},
+	
+	reposition: function(elem) {
+		// reposition our floating div, optionally to new container
+		// warning: container CANNOT change size, only position
+		if (elem) {
+			this.domElement = ZeroClipboard.$(elem);
+			if (!this.domElement) this.hide();
+		}
+		
+		if (this.domElement && this.div) {
+			var box = ZeroClipboard.getDOMObjectPosition(this.domElement);
+			var style = this.div.style;
+			style.left = '' + box.left + 'px';
+			style.top = '' + box.top + 'px';
+		}
+	},
+	
+	setText: function(newText) {
+		// set text to be copied to clipboard
+		this.clipText = newText;
+		if (this.ready) this.movie.setText(newText);
+	},
+	
+	addEventListener: function(eventName, func) {
+		// add user event listener for event
+		// event types: load, queueStart, fileStart, fileComplete, queueComplete, progress, error, cancel
+		eventName = eventName.toString().toLowerCase().replace(/^on/, '');
+		if (!this.handlers[eventName]) this.handlers[eventName] = [];
+		this.handlers[eventName].push(func);
+	},
+	
+	setHandCursor: function(enabled) {
+		// enable hand cursor (true), or default arrow cursor (false)
+		this.handCursorEnabled = enabled;
+		if (this.ready) this.movie.setHandCursor(enabled);
+	},
+	
+	setCSSEffects: function(enabled) {
+		// enable or disable CSS effects on DOM container
+		this.cssEffects = !!enabled;
+	},
+	
+	receiveEvent: function(eventName, args) {
+		// receive event from flash
+		eventName = eventName.toString().toLowerCase().replace(/^on/, '');
+				
+		// special behavior for certain events
+		switch (eventName) {
+			case 'load':
+				// movie claims it is ready, but in IE this isn't always the case...
+				// bug fix: Cannot extend EMBED DOM elements in Firefox, must use traditional function
+				this.movie = document.getElementById(this.movieId);
+				if (!this.movie) {
+					var self = this;
+					setTimeout( function() { self.receiveEvent('load', null); }, 1 );
+					return;
+				}
+				
+				// firefox on pc needs a "kick" in order to set these in certain cases
+				if (!this.ready && navigator.userAgent.match(/Firefox/) && navigator.userAgent.match(/Windows/)) {
+					var self = this;
+					setTimeout( function() { self.receiveEvent('load', null); }, 100 );
+					this.ready = true;
+					return;
+				}
+				
+				this.ready = true;
+				this.movie.setText( this.clipText );
+				this.movie.setHandCursor( this.handCursorEnabled );
+				break;
+			
+			case 'mouseover':
+				if (this.domElement && this.cssEffects) {
+					this.domElement.addClass('hover');
+					if (this.recoverActive) this.domElement.addClass('active');
+				}
+				break;
+			
+			case 'mouseout':
+				if (this.domElement && this.cssEffects) {
+					this.recoverActive = false;
+					if (this.domElement.hasClass('active')) {
+						this.domElement.removeClass('active');
+						this.recoverActive = true;
+					}
+					this.domElement.removeClass('hover');
+				}
+				break;
+			
+			case 'mousedown':
+				if (this.domElement && this.cssEffects) {
+					this.domElement.addClass('active');
+				}
+				break;
+			
+			case 'mouseup':
+				if (this.domElement && this.cssEffects) {
+					this.domElement.removeClass('active');
+					this.recoverActive = false;
+				}
+				break;
+		} // switch eventName
+		
+		if (this.handlers[eventName]) {
+			for (var idx = 0, len = this.handlers[eventName].length; idx < len; idx++) {
+				var func = this.handlers[eventName][idx];
+			
+				if (typeof(func) == 'function') {
+					// actual function reference
+					func(this, args);
+				}
+				else if ((typeof(func) == 'object') && (func.length == 2)) {
+					// PHP style object + method, i.e. [myObject, 'myMethod']
+					func[0][ func[1] ](this, args);
+				}
+				else if (typeof(func) == 'string') {
+					// name of function
+					window[func](this, args);
+				}
+			} // foreach event handler defined
+		} // user defined handler for event
+	}
+	
+};
 
 //if(strlen($_POST['table']) and strlen($_POST['row'])>0 and strlen($_POST['okr'])>0 and (strlen($_POST['znach'])>0 or strlen($_POST['zamen'])>0))
 </script>
-<body onload="FocusOnInput()">
+<!--
+ <link rel="stylesheet" type="text/css" href="http://juliabot.com/hosted_library/semantic/packaged/css/semantic.css">
+ <script src="http://juliabot.com/hosted_library/semantic/packaged/javascript/semantic.js"></script>
+--> 
+
+	
+	
+    <link href="http://juliabot.com/hosted_library/metro/css/metro-bootstrap.css" rel="stylesheet">
+    <link href="http://juliabot.com/hosted_library/metro/css/metro-bootstrap-responsive.css" rel="stylesheet">
+    <link href="http://juliabot.com/hosted_library/metro/docs/css/iconFont.css" rel="stylesheet">
+    <link href="http://juliabot.com/hosted_library/metro/docs/css/docs.css" rel="stylesheet">
+	<script src="http://juliabot.com/hosted_library/metro/min/metro.min.js"></script>
+	<!-- Календарь -->
+	<script src="http://juliabot.com/hosted_library/metro/js/metro-calendar.js"></script>
+	<script src="http://juliabot.com/hosted_library/metro/js/metro-datepicker.js"></script>
+	<!--Слайдер-->
+	<script src="http://juliabot.com/hosted_library/metro/js/metro-slider.js"></script>
+ 
+<body  class="metro" onload="FocusOnInput()">
+
 <link href='http://fonts.googleapis.com/css?family=Istok+Web&subset=cyrillic-ext,latin,latin-ext' rel='stylesheet' type='text/css'>
 <style>
 body,h1,h2,h3,div,input,a
 {
 font-family: 'Istok Web', sans-serif;
 }
+body
+{
+background:rgb(255,197,7);
+}
+input
+{
+width:auto !important;
+}
 </style>
 
-<title>Поиск и замена по всем файлам сайта и базам данных</title>
-<h2 style="margin:0;">Поиск и редактирование на сайте для программиста и администратора</h2><!-- -->
-<small >Глубокий поиск в Mysql и файлах,редактирование файлов и таблиц,просмотр размеров файлов и папок и расширений,сделано на PHP без SSH</small><br>
+<title>Поисковик</title>
+<h2 style="margin:0;"><span style="font-size:35px;">П</span>оисковик на сайте вместе с редактором</h2><!-- -->
+<small >Глубокий поиск и редактирование в Mysql таблицах и файлах</small><br>
 <!--
 <small><a href="">Удалить этот скрипт</a> или <a href="">задать пароль </a> </small>
 <div style="position:absolute;top:12px;right:12px;">
@@ -548,19 +928,32 @@ font-family: 'Istok Web', sans-serif;
 </div>
 -->
 
-<form method="POST" action="">
+<form class="ui fluid form" method="POST" action="">
 <input type="hidden" name="search" value="y">
 <table>
-<tr><td style="width:244px;">Строка поиска :</td><td><input id="input" style="font-size:44px;width:640px;height:62px;" type="text" value="<?php echo htmlspecialchars($_POST['search_string']);?>" name="search_string">
+<tr><td style="width:244px;">Строка поиска :</td><td>
+
+
+<input id="input" style="font-size:44px;width:640px;height:62px;" type="text" value="<?php echo htmlspecialchars($_POST['search_string']);?>" name="search_string">
+
 <br><font color="grey">Например:<i>igrushki.ru</i></font></td></tr>
-<tr><td>Предпологаемая строка <br>замены:</td><td><input style="width:320px;" type="text" value="<?php echo htmlspecialchars($_POST['search_string_zam']);?>" name="search_string_zam">
-<br><font color="grey">Например:<i>detskii_mir.ru</i></font>
+<tr><td>Предполагаемая строка <br>замены:</td><td>
+<!--<div class="ui input" style="display: inline-block;">-->
+
+<input style="width:320px;" type="text" value="<?php echo htmlspecialchars($_POST['search_string_zam']);?>" name="search_string_zam">
+<br>
+<!--<div class="ui blue inverted segment"></div>-->
+<font color="grey">Например:<i>detskii_mir.ru</i></font>
 
 
 <font style="font-size:12px;">
 <table>
 <?php if($_POST['zamen_srazy_f']=='y' and 1==2 ){ $checked='checked';}else{ $checked='';}?>
-<tr><td style="font-size:12px;">Заменить сразу не предлагая варианты в файлах</td><td style="font-size:12px;"><input value="y" <?php echo $checked;?> type="checkbox" name="zamen_srazy_f"></td>
+<tr><td style="font-size:12px;">Заменить сразу не предлагая варианты в файлах</td><td style="font-size:12px;">
+
+													<input value="y" <?php echo $checked;?> type="checkbox" name="zamen_srazy_f">
+
+</td>
 </tr>
 <?php if($_POST['zamen_srazy_m']=='y' and 1==2 ){ $checked='checked';}else{ $checked='';}?>
 <tr>
@@ -571,7 +964,9 @@ font-family: 'Istok Web', sans-serif;
 
 
 </td></tr>
-<tr><td>Папка поиска:</td><td><?php
+<tr><td>Папка поиска:</td><td>
+
+<?php
 if($_POST['path'])
 {
 
@@ -600,9 +995,24 @@ $vverx_path=implode('/',$new_path_ar);
 
 
 
-echo '<input style="font-weight:bold;" type="text" size="50" name="path" value="'. htmlspecialchars($path).'"><br>
-<div style="width:640px">
-<small><a href="?path='.$vverx_path.'">Перейти на раздел выше</a>&nbsp; <br>В каких папках искать</small>';
+echo '
+<div class="ui input" style="display: inline-block;">
+<input style="font-weight:bold;" type="text" size="80" name="path" value="'. htmlspecialchars($path).'">
+</div>
+<br><!--style="font-weight:bold;"-->
+
+<small><a href="?path='.$vverx_path.'">Перейти в папку выше</a>&nbsp; <br>
+';
+?>
+<table>
+<tr>
+<td valign="top">
+<?
+echo '
+Подпапки поиска:</small>
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA/ElEQVQ4jaXTSUoDURAG4G9hdCEuvIXEgSgJesQGwQHidBKHayR6Al25UyFRI3HR9eKz070I+aEWNb5XVX8xjx2cYojXkAFO0K6Jn2EVfUwwbZAJztGqS36IoE9coYvNkB6u8RUxd5Ezw004nrGf2dPLCQd4CdtFMu7iByPsVX5WLQAdjKOdtuhpqhxSFXUF4CzPeQqlu0CBw7AP4D2U9QUKbIT9DT6WLZBa6IWz0MyDImKOQh/yN8R+9kJdkSLzX8qGuK1cydj/NRYNyR0l2b6xlYxpLVUiFZXknEjH+VBauDdP5bWQKpVvsaKCpY4pRzrnRyW9R8pp157zL2etcxPU3FAiAAAAAElFTkSuQmCC">
+
+';
 $files=scandir($path);
 $cheked=array_flip($_POST['files']);
 
@@ -614,35 +1024,56 @@ $size_dir=unserialize($_COOKIE['sizedir']);
 
 foreach($files as $k=>$v)
 {
-if($v!='.' and $v!='..' and strlen($v)>0 and is_dir($path.'/'.$v.'/'))
-{
-echo ' <br>';
-if(isset($cheked[$v]))
-{
-$checked='checked';
-}
-else
-{
-$checked='';
-}
-if(count($_POST['files'])==0)
-{
-$checked='checked';
-}
-$name=iconv('windows-1251','utf-8',$v);
-echo '<input '.$checked.' type="checkbox" name="files[]" value="'.htmlspecialchars($v).'"><a href="?path='.$path.'/'.$v.'/'.'"&ext='.$_POST['ext'].'>'.htmlspecialchars($name).'</a>&nbsp;';
-//echo $path.'/'.$v.'<br>';
-if(isset($size_dir[$path.$v]))
-{
-echo '<small>('.razmer($size_dir[$path.$v]).')</small>';
-}
-
-}
+	if($v=='.' or  $v=='..' or strlen($v)==0)
+	{
+	}
+	elseif(is_dir($path.'/'.$v.'/'))
+	{
+		echo ' <br>';
+			if(isset($cheked[$v]))
+			{
+			$checked='checked';
+			}
+			else
+			{
+			$checked='';
+			}
+			if(count($_POST['files'])==0)
+			{
+			$checked='checked';
+			}
+		$name=iconv('windows-1251','utf-8',$v);
+		echo '<input '.$checked.' type="checkbox" name="files[]" value="'.htmlspecialchars($v).'"><a href="?path='.$path.'/'.$v.'/'.'"&ext='.$_POST['ext'].'>'.htmlspecialchars($name).'</a>&nbsp;';
+		//echo $path.'/'.$v.'<br>';
+		if(isset($size_dir[$path.$v]))
+		{
+		echo '<small>('.razmer($size_dir[$path.$v]).')</small>';
+		}
+	}
+	else
+	{
+		$files_and[]=array('filename'=>$v,'path'=>$path.'/'.$v);
+	}
 }
 ?>
-</div>
+</td><td valign="top">
+Файлы в папке:
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA/ElEQVQ4jaXTSUoDURAG4G9hdCEuvIXEgSgJesQGwQHidBKHayR6Al25UyFRI3HR9eKz070I+aEWNb5XVX8xjx2cYojXkAFO0K6Jn2EVfUwwbZAJztGqS36IoE9coYvNkB6u8RUxd5Ezw004nrGf2dPLCQd4CdtFMu7iByPsVX5WLQAdjKOdtuhpqhxSFXUF4CzPeQqlu0CBw7AP4D2U9QUKbIT9DT6WLZBa6IWz0MyDImKOQh/yN8R+9kJdkSLzX8qGuK1cydj/NRYNyR0l2b6xlYxpLVUiFZXknEjH+VBauDdP5bWQKpVvsaKCpY4pRzrnRyW9R8pp157zL2etcxPU3FAiAAAAAElFTkSuQmCC">
+<br>
+<?
+foreach ($files_and as $k=>$v)
+{
+echo '<a target="_blank" href="?fopen='.$v['path'].'">'.$v['filename'].'</a><br>';
+}
+?>
 </td></tr>
+</table>
+</td>
+
+</tr>
 <tr><td>Расширения файлов :</td><td>
+
+<br>
 <?php
 $cheked=array_flip($_POST['ras']);
 $ras=array('php','html','js','css','sql','xml');
@@ -667,7 +1098,7 @@ $checked='checked';
 }
 echo '<input '.$checked.' type="checkbox" name="ras[]" value="'.htmlspecialchars($v).'">.'.htmlspecialchars($v).'&nbsp;';
 }
-echo '<br><input type="text" name="ext" value="'.$_POST['ext'].'">(через запятую ,например <b>swf,gif,jpg</b>)';
+echo '<br><input type="text" name="ext" value="'.$_POST['ext'].'">(дополнительно через запятую ,например <b>swf,gif,jpg</b>)';
 
 
 ?></td></tr>
@@ -683,6 +1114,19 @@ echo '<br><input type="text" name="ext" value="'.$_POST['ext'].'">(через з
 </tr>
 <tr>
 <td>Размеры файлов :</td><td>от
+
+<div class="slider" id="slider2" data-role="slider" data-position="0" data-accuracy="0" data-colors="blue, red, yellow, green"></div>
+<script>
+    $(function(){
+    var slider2 = $("#slider2").slider({
+    position: 10,
+    accuracy: 1
+    });
+	 slider2.slider('value', 100);
+    });
+    // Short method to set position
+
+</script>
 <input type="text" size="7" value="<?php echo htmlspecialchars($_POST['size_sort_ot']);?>" name="size_sort_ot">&nbsp;<b>Kb</b> до
 <input type="text" size="7" value="<?php echo htmlspecialchars($_POST['size_sort_do']);?>" name="size_sort_do">&nbsp;<b>Kb</b>
 </td>
@@ -706,11 +1150,18 @@ case 7: $m='Воскресенье'; break;
 <small><b>(сегодня <?php echo date('d.m.y').','.$m.')<br>'.date('H:i:s');?></b></small>
 </td><td>
 <?php if($_POST['segodnya']=='y'){ $checked='checked';}else{ $checked='';}?>
-от <input type="text" class="datepicker" value="<?php echo htmlspecialchars($_POST['dat_ot']);?>" size="7" name="dat_ot">&nbsp; до
+от 
+   <!-- <div class="input-control text"> -->
+    <input type="text" class="datepicker" value="<?php echo htmlspecialchars($_POST['dat_ot']);?>" size="7" name="dat_ot"><!--  class="datepicker"-->
+	
+   <!--
+   <button class="btn-date"></button>
+	</div>-->
+&nbsp; до
 <input class="datepicker" value="<?php echo htmlspecialchars($_POST['dat_do']);?>" type="text" size="7" name="dat_do">&nbsp;</td>
 </tr>
 <tr>
-<td>ЧМОД (CHMOD):</td><td>
+<td>CHMOD:</td><td>
 <input type="text" size="3" name="chmod" value="<?php echo htmlspecialchars($_POST['chmod']);?>" maxlength="3">&nbsp;<input type="radio" value=1 name="chmod_typ">&nbsp;равно<input type="radio" name="chmod_typ" value=2>
 &nbsp;более свободные права (>=)<input type="radio" name="chmod_typ" value=3>&nbsp;более жесткие права (<=)
 </td>
@@ -809,14 +1260,21 @@ echo '<br><input '.$checked.' type="checkbox" name="databases[]" value="'.htmlsp
 </tr>
 <tr>
 <?php if($_POST['evristika']=='y'){ $checked='checked';}else{ $checked='';}?>
-<td>Эвристический поиск:</td><td style="width:400px;display:block;"><input type="checkbox" name="evristika" value="y" <?php echo $checked;?>> Очищать  все спецсимволы
+<td>Эвристический поиск:</td><td style="width:400px;display:block;">
+
+<input type="checkbox" name="evristika" value="y" <?php echo $checked;?>>
+
+ Очищать  все спецсимволы
 <!--<input type="checkbox" name="evristika_o" value="y" <?php echo $checked;?>> Очень глубокий-->
 <br>
 <small>Например для строки '8 (+495) 718-39-43' найдет '8(495)718-3-943'</small>
 </td>
 
 <?php if($_POST['html']=='y'){ $checked='checked';}else{ $checked='';}?>
-<td style="display:block;"><input type="checkbox" name="html" value="y" <?php echo $checked;?>> Очищать от HTML-тегов
+<td style="display:block;">
+
+<input type="checkbox" name="html" value="y" <?php echo $checked;?>>
+ Очищать от HTML-тегов
 <!--<input type="checkbox" name="evristika_o" value="y" <?php echo $checked;?>> Очень глубокий-->
 <br>
 <small>Например для строки '8 
@@ -842,11 +1300,10 @@ echo 200;
 }
  ?>" size="6">
 </td>
-
 </tr>
-
 <?php if($_POST['statistika']=='y'){ $checked='checked';}else{ $checked='';}?>
-<tr><td>Собрать статистику:</td><td><input type="checkbox" name="statistika" value="y" <?php echo $checked;?> > Да
+<tr><td>Собрать статистику:</td><td>
+<input type="checkbox" name="statistika" value="y" <?php echo $checked;?> >
 <br>
 <small>Размеры папок,количество файлов,время выполнения,управление папками</small>
 </td>
@@ -895,7 +1352,9 @@ echo 200;
 Посмотреть список файлов которые были прочтены на сервере за последние 30 секунд 
 </td>
 <?php if($_POST['cms_rfiles']=='y'){ $checked='checked';}else{ $checked='';}?>
-<td><input type="checkbox" name="cms_rfiles" value="y" <?php echo $checked;?> > Да
+<td>
+<input type="checkbox" name="cms_rfiles" value="y" <?php echo $checked;?> >
+
 <br>
 <small>Опция работает в Windows и может работать или не работать на Linux .Все зависит от настроек свервера на Linux</small>
 </td>
@@ -919,8 +1378,13 @@ echo $set_time;
 </tr>
 -->
 <tr><td>
-<input type="submit" name="sbros" value="Сбросить все настройки"><br>
-<input type="submit" value="Начать">
+<button name="sbros" class="command-button inverse">
+                                    <!--<i class="icon-share-3 on-right"></i>-->
+                                    Сбросить все настройки
+                                    <small>Сбросить настройки поиска</small>
+</button>
+<!--<input  class="button large primary" type="submit" name="sbros" value="Сбросить все настройки"><br>-->
+<input  class="button large primary" type="submit" value="Начать поиск">
 </td>
 </tr>
 </table>
@@ -1384,7 +1848,7 @@ if($_POST['statistika']=='y')
 {
 echo '
 <h3><font color="#3366FF">Статистика</font></h3>
-<table id="mytable2">
+<table class="ui table segment" id="mytable2">
 <thead>
 <tr>
 <th>Название папки</th><th>Размер</th><th>Количество файлов</th><th>CHMOD</th>
@@ -1398,7 +1862,7 @@ foreach($size_dir as $k=>$v)
 $vv=razmer($v);
 if($k=='')
 {
-$kname='<small><b>текущая папка</b></small>';
+$kname='<small><b>папки текущей папки</b></small>';
 }
 else
 {
@@ -1447,7 +1911,7 @@ setcookie('rasarray',rasarray);
 
 echo '
 <h3><font color="#3366FF">Поиск внутри файлов</font></h3>
-<table id="myTable">
+<table class="table" id="myTable">
 <thead>
 <tr>
 <th style="width:200px;"><font color="blue">Имя файла</font></th>
@@ -1465,17 +1929,27 @@ echo '
 <tbody>
 ';
 //http://www.aleksandr.ru
-
-
-
 foreach($result as $k=>$v)
 {
 $v['file']=preg_replace("$/+$","/",iconv('windows-1251','utf-8',$v['file']));
 $vremya=date('H:i:s',$v['vre']).'<br>'.rudate('d F Y',$v['vre']);
-echo '<tr><td style="word-wrap: break-word;width:200px;"><a target="_blank" href="?fopen='.$v['file'].'&kod='.$v['kod'].'">'.$v['file'].'</td>
+echo '<tr><td style="word-wrap: break-word;width:200px;">
+<!--<button id="copyButton">-->
+<img width="16" height="16" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/PjwhRE9DVFlQRSBzdmcgIFBVQkxJQyAnLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4nICAnaHR0cDovL3d3dy53My5vcmcvR3JhcGhpY3MvU1ZHLzEuMS9EVEQvc3ZnMTEuZHRkJz48c3ZnIGhlaWdodD0iNTEycHgiIGlkPSJMYXllcl8xIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1MTIgNTEyOyIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiIgd2lkdGg9IjUxMnB4IiB4bWw6c3BhY2U9InByZXNlcnZlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIj48Zz48Zz48cGF0aCBkPSJNMTYwLDE2MGgxOTJjLTEuNy0yMC05LjctMzUuMi0yNy45LTQwLjFjLTAuNC0wLjEtMC45LTAuMy0xLjMtMC40Yy0xMi0zLjQtMjAuOC03LjUtMjAuOC0yMC43Vjc4LjIgICAgYzAtMjUuNS0yMC41LTQ2LjMtNDYtNDYuM2MtMjUuNSwwLTQ2LDIwLjctNDYsNDYuM3YyMC42YzAsMTMuMS04LjgsMTcuMi0yMC44LDIwLjZjLTAuNCwwLjEtMC45LDAuNC0xLjQsMC41ICAgIEMxNjkuNiwxMjQuOCwxNjEuOSwxNDAsMTYwLDE2MHogTTI1Niw2NC40YzcuNiwwLDEzLjgsNi4yLDEzLjgsMTMuOGMwLDcuNy02LjIsMTMuOC0xMy44LDEzLjhjLTcuNiwwLTEzLjgtNi4yLTEzLjgtMTMuOCAgICBDMjQyLjIsNzAuNiwyNDguNCw2NC40LDI1Niw2NC40eiIvPjxwYXRoIGQ9Ik00MDQuNiw2M0gzMzF2MTQuNWMwLDEwLjYsOC43LDE4LjUsMTksMTguNWgzNy4yYzYuNywwLDEyLjEsNS43LDEyLjQsMTIuNWwwLjEsMzI3LjJjLTAuMyw2LjQtNS4zLDExLjYtMTEuNSwxMi4xICAgIGwtMjY0LjQsMC4xYy02LjItMC41LTExLjEtNS43LTExLjUtMTIuMWwtMC4xLTMyNy4zYzAuMy02LjgsNS45LTEyLjUsMTIuNS0xMi41SDE2MmMxMC4zLDAsMTktNy45LDE5LTE4LjVWNjNoLTczLjYgICAgQzkyLjMsNjMsODAsNzYuMSw4MCw5MS42VjQ1MmMwLDE1LjUsMTIuMywyOCwyNy40LDI4SDI1NmgxNDguNmMxNS4xLDAsMjcuNC0xMi41LDI3LjQtMjhWOTEuNkM0MzIsNzYuMSw0MTkuNyw2Myw0MDQuNiw2M3oiLz48L2c+PHJlY3QgaGVpZ2h0PSIxNiIgd2lkdGg9IjExMiIgeD0iMTQ0IiB5PSIxOTIiLz48cmVjdCBoZWlnaHQ9IjE2IiB3aWR0aD0iMTYwIiB4PSIxNDQiIHk9IjI4OCIvPjxyZWN0IGhlaWdodD0iMTYiIHdpZHRoPSIxMjkiIHg9IjE0NCIgeT0iMzg0Ii8+PHJlY3QgaGVpZ2h0PSIxNiIgd2lkdGg9IjE3NiIgeD0iMTQ0IiB5PSIzMzYiLz48cmVjdCBoZWlnaHQ9IjE2IiB3aWR0aD0iMjA4IiB4PSIxNDQiIHk9IjI0MCIvPjwvZz48L3N2Zz4=">
+<!--</button>-->
+<a target="_blank" href="?fopen='.$v['file'].'&kod='.$v['kod'].'&search_string='.htmlspecialchars($search_string).'">
+'.substr($v['file'],strlen($_POSTpath)).'
+
+</a>
+<script type="text/javascript"> 
+    var clip = new ZeroClipboard.Client(); 
+    clip.setText("Ух ты! Получилось!"); 
+    clip.glue("copyButton"); 
+</script> 
+</td>
 <td>
 <a target="_blank" href="#" onclick="udalit(\''.htmlspecialchars($v['file']).'\');return false;">
-x
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAC90lEQVQ4jW2SXUhTcRjGX7adds7//M/+Z67lzOhKQ7woJQpiVBCFIhukXXYRdRFBWdFFqOg8S5nNuexrln2YedZxudpotVxGX4ZCQlF000WUdFEQUcTu6uLpIhqYPncPvL+HB96HaLFsD9as2f8yGLz9KhicexMMzr5sarqWr6wMLHG7UM9qava8bm7GtN+PbFkZJr1ePPB6MVlRgbnGRrxtbv583+erXRJ+Ul/f82jzZpicI718OXLl5bhfUYHCypXI+3zIejxI6Trmdu7E1OrV/gVwZtWqxnsbN+IK50jqOky7HbeFQM7nw93ycmQ0DeOShJTHg1FVxfT27UgQ8VJAfv36rwnOcdXlQrK2FsVfv3AnEMCEomDcZsN0KISvX75gtKwM13UdIx4PpurqRoiIqI2xDWZVFYaEwJDdjvfPn+Of0lu24PHx4yU/E43ikizjohC4WV0NIiI6s2LFsUFNwzkhcEHXkWAMP79/x//6MDODBBGG3W4MCYGRykq0LltWS/2a1jegaTgjBM4LgQTniBOhWCyW4PkXLzBAhGFdx5DbjbNC4JzbjVZZ3kq9jHVENQ1xlwunhUA/ER52dCxqkGpowCmbDWd1HYNCIO5y4YAk1dMRp3NHhHP0aRoiDgem2ttL0Lt8Ht/m50v+RkMD+p1ORDlHjHOUvtDL2O8exhAmwtOTJwEAH2dnYRAhYrOh+OPH3xYtLeiVJEQ4R4yxQilgQFGOGKqKMGPoIsJoUxMMIvSpKiKKggjnuLxpE7qJcIIxhFUVPU5n9YIxRWV5ylAUGIyhy+FAWFEQZgxhxmDIMkKSBIMxGIqCuNN5cMk5h+32iyEidEsSDEWBoap/IVlGt8OBEBF6ZXn3IrBQKFRN5HLbTMtqHO7qGoz5/UVDVdFJhE4i9Hi9iAcCn67GYkeT6XRgIpfbVigUqkoBlmWtHRsbazFNc6+ZSh1KptOtVjbbbmUybVYm02Zls+03bt06PDY+fjiZTO4zTXNXKpVaR0T0B3OGtphyMh8BAAAAAElFTkSuQmCC">
 </a>
 </td>
 <td style="width:600px;height:160px;">';
@@ -1594,7 +2068,7 @@ foreach($databases as $k=>$v)
 
 echo '
 <h3><font color="#3366FF">Поиск внутри базы данных</font></h3>
-<table style="widht:100%;min-width:1000px;">
+<table class="table" style="widht:100%;min-width:1000px;">
 <tr>
 <td><font color="blue">База данных</font></td>
 <td><font color="blue">Имя таблицы</font></td>
