@@ -1007,12 +1007,13 @@ echo '
 <table>
 <tr>
 <td valign="top">
-<?
+<?php
 echo '
 Подпапки поиска:</small>
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA/ElEQVQ4jaXTSUoDURAG4G9hdCEuvIXEgSgJesQGwQHidBKHayR6Al25UyFRI3HR9eKz070I+aEWNb5XVX8xjx2cYojXkAFO0K6Jn2EVfUwwbZAJztGqS36IoE9coYvNkB6u8RUxd5Ezw004nrGf2dPLCQd4CdtFMu7iByPsVX5WLQAdjKOdtuhpqhxSFXUF4CzPeQqlu0CBw7AP4D2U9QUKbIT9DT6WLZBa6IWz0MyDImKOQh/yN8R+9kJdkSLzX8qGuK1cydj/NRYNyR0l2b6xlYxpLVUiFZXknEjH+VBauDdP5bWQKpVvsaKCpY4pRzrnRyW9R8pp157zL2etcxPU3FAiAAAAAElFTkSuQmCC">
-
 ';
+
+
 $files=scandir($path);
 $cheked=array_flip($_POST['files']);
 
@@ -1060,7 +1061,7 @@ foreach($files as $k=>$v)
 Файлы в папке:
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA/ElEQVQ4jaXTSUoDURAG4G9hdCEuvIXEgSgJesQGwQHidBKHayR6Al25UyFRI3HR9eKz070I+aEWNb5XVX8xjx2cYojXkAFO0K6Jn2EVfUwwbZAJztGqS36IoE9coYvNkB6u8RUxd5Ezw004nrGf2dPLCQd4CdtFMu7iByPsVX5WLQAdjKOdtuhpqhxSFXUF4CzPeQqlu0CBw7AP4D2U9QUKbIT9DT6WLZBa6IWz0MyDImKOQh/yN8R+9kJdkSLzX8qGuK1cydj/NRYNyR0l2b6xlYxpLVUiFZXknEjH+VBauDdP5bWQKpVvsaKCpY4pRzrnRyW9R8pp157zL2etcxPU3FAiAAAAAElFTkSuQmCC">
 <br>
-<?
+<?php
 foreach ($files_and as $k=>$v)
 {
 echo '<a target="_blank" href="?fopen='.$v['path'].'">'.$v['filename'].'</a><br>';
